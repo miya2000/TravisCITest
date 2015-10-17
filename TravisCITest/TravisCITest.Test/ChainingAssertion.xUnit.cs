@@ -471,7 +471,7 @@ namespace Xunit
             var properties = left.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public).Where(x => x.GetGetMethod(false) != null);
             var members = fields.Cast<MemberInfo>().Concat(properties);
 
-            foreach (dynamic mi in fields.Cast<MemberInfo>().Concat(properties))
+            foreach (dynamic mi in members)
             {
                 var concatNames = names.Concat(new[] { (string)mi.Name });
 
