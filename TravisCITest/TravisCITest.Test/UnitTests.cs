@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using TestHelper;
 using NUnit.Framework;
+using System.Threading.Tasks;
 
 namespace TravisCITest.Test
 {
@@ -65,7 +66,15 @@ namespace TravisCITest.Test
         [Test]
         public void FailTest()
         {
-            "aaa".Is("bbb");
+            "aaa".Is("aaa");
         }
+
+        [Test]
+        public async Task TaskTest()
+        {
+            await Task.Delay(0);
+            "aaa".Is("aaa");
+        }
+
     }
 }
