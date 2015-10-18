@@ -3,16 +3,17 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using TestHelper;
-using Xunit;
+using NUnit.Framework;
 
 namespace TravisCITest.Test
 {
+    [TestFixture]
     public class UnitTest
     {
         CodeAnalysisVerifier Verifier { get; } = new CodeAnalysisVerifier(new TravisCITestAnalyzer(), new TravisCITestCodeFixProvider());
 
-        [Fact]
-        public void Fact1()
+        [Test]
+        public void Test1()
         {
             var test = @"
     using System;
@@ -61,7 +62,7 @@ namespace TravisCITest.Test
             actual.Is(expected);
         }
 
-        [Fact]
+        [Test]
         public void FailTest()
         {
             "aaa".Is("bbb");

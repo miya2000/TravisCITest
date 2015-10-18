@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeRefactorings;
 using Microsoft.CodeAnalysis.Text;
-using Xunit;
+using NUnit.Framework;
 
 namespace TestHelper
 {
@@ -35,7 +35,7 @@ namespace TestHelper
         public void VerifyRefactoring(string oldSource, int index, string newSource, string equivalenceKey = null, bool allowNewCompilerDiagnostics = false)
         {
             var actual = GetRefactoringResult(oldSource, index, equivalenceKey);
-            Assert.Equal(newSource, actual);
+            Assert.AreEqual(newSource, actual);
         }
 
         public List<CodeAction> GetRefactoringActions(string source, int index)

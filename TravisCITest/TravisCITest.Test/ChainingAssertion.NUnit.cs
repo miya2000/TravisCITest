@@ -8,18 +8,17 @@
  *--------------------------------------------------------------------------*/
 
 /* -- Tutorial --
- * | at first, include this file on xUnit.net Project.
+ * | at first, include this file on NUnit Project.
  * 
  * | three example, "Is" overloads.
  * 
- * // This same as Assert.Equal(25, Math.Pow(5, 2))
+ * // This same as Assert.AreEqual(25, Math.Pow(5, 2))
  * Math.Pow(5, 2).Is(25);
  * 
- * // This same as Assert.True("foobar".StartsWith("foo") && "foobar".EndWith("bar"))
+ * // This same as Assert.IsTrue("foobar".StartsWith("foo") && "foobar".EndWith("bar"))
  * "foobar".Is(s => s.StartsWith("foo") && s.EndsWith("bar"));
  * 
- * // This same as Assert.Equal(Enumerable.Range(1,5).ToArray(), new[]{1, 2, 3, 4, 5}.ToArray())
- * // it is sequence value compare
+ * // This same as CollectionAssert.AreEqual(Enumerable.Range(1,5), new[]{1, 2, 3, 4, 5})
  * Enumerable.Range(1, 5).Is(1, 2, 3, 4, 5);
  * 
  * | CollectionAssert
@@ -37,21 +36,21 @@
  * 
  * // Null Assertions
  * Object obj = null;
- * obj.IsNull();             // Assert.Null(obj)
- * new Object().IsNotNull(); // Assert.NotNull(obj)
+ * obj.IsNull();             // Assert.IsNull(obj)
+ * new Object().IsNotNull(); // Assert.IsNotNull(obj)
  *
  * // Not Assertion
- * "foobar".IsNot("fooooooo"); // Assert.NotEqual
- * new[] { "a", "z", "x" }.IsNot("a", "x", "z"); /// Assert.NotEqual
+ * "foobar".IsNot("fooooooo"); // Assert.AreNotEqual
+ * new[] { "a", "z", "x" }.IsNot("a", "x", "z"); /// CollectionAssert.AreNotEqual
  *
  * // ReferenceEqual Assertion
  * var tuple = Tuple.Create("foo");
- * tuple.IsSameReferenceAs(tuple); // Assert.Same
- * tuple.IsNotSameReferenceAs(Tuple.Create("foo")); // Assert.NotSame
+ * tuple.IsSameReferenceAs(tuple); // Assert.AreSame
+ * tuple.IsNotSameReferenceAs(Tuple.Create("foo")); // Assert.AreNotSame
  *
  * // Type Assertion
- * "foobar".IsInstanceOf<string>(); // Assert.IsType
- * (999).IsNotInstanceOf<double>(); // Assert.IsNotType
+ * "foobar".IsInstanceOf<string>(); // Assert.IsInstanceOf
+ * (999).IsNotInstanceOf<double>(); // Assert.IsNotInstanceOf
  * 
  * | Advanced Collection Assertion
  * 
@@ -125,9 +124,8 @@ using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using Xunit.Sdk;
 
-namespace Xunit
+namespace NUnit.Framework
 {
     #region Extensions
 
@@ -135,21 +133,19 @@ namespace Xunit
     [ContractVerification(false)]
     public static partial class AssertEx
     {
-        /// <summary>Assert.Equal, if T is IEnumerable then compare value equality</summary>
-        public static void Is<T>(this T actual, T expected)
+        /// <summary>Assert.AreEqual, if T is IEnumerable then CollectionAssert.AreEqual</summary>
+        public static void Is<T>(this T actual, T expected, string message = "")
         {
             if (typeof(T) != typeof(string) && typeof(IEnumerable).IsAssignableFrom(typeof(T)))
             {
-                Assert.Equal(
-                    ((IEnumerable)actual).Cast<object>().ToArray(),
-                    ((IEnumerable)expected).Cast<object>().ToArray());
+                ((IEnumerable)actual).Cast<object>().Is(((IEnumerable)expected).Cast<object>(), message);
                 return;
             }
 
-            Assert.Equal(expected, actual);
+            Assert.AreEqual(expected, actual, message);
         }
 
-        /// <summary>Assert.True(predicate(value))</summary>
+        /// <summary>Assert.IsTrue(predicate(value))</summary>
         public static void Is<T>(this T value, Expression<Func<T, bool>> predicate, string message = "")
         {
             var condition = predicate.Compile().Invoke(value);
@@ -172,153 +168,133 @@ namespace Xunit
                     string.IsNullOrEmpty(message) ? "" : ", " + message);
             }
 
-            Assert.True(condition, msg);
+            Assert.IsTrue(condition, msg);
         }
 
-        /// <summary>Assert.Equal</summary>
-        public static void Is<T>(this T actual, T expected, IEqualityComparer<T> comparer)
-        {
-            Assert.Equal(expected, actual, comparer);
-        }
-
-        /// <summary>Assert.Equal(sequence value compare)</summary>
+        /// <summary>CollectionAssert.AreEqual</summary>
         public static void Is<T>(this IEnumerable<T> actual, params T[] expected)
         {
             Is(actual, expected.AsEnumerable());
         }
 
-        /// <summary>Assert.Equal(sequence value compare)</summary>
-        public static void Is<T>(this IEnumerable<T> actual, IEnumerable<T> expected)
+        /// <summary>CollectionAssert.AreEqual</summary>
+        public static void Is<T>(this IEnumerable<T> actual, IEnumerable<T> expected, string message = "")
         {
-            Assert.Equal(expected.ToArray(), actual.ToArray());
+            CollectionAssert.AreEqual(expected.ToArray(), actual.ToArray(), message);
         }
 
-        /// <summary>Assert.True(actual.SequenceEqual(expected, comparer))</summary>
-        public static void Is<T>(this IEnumerable<T> actual, IEnumerable<T> expected, IEqualityComparer<T> comparer)
+        /// <summary>CollectionAssert.AreEqual</summary>
+        public static void Is<T>(this IEnumerable<T> actual, IEnumerable<T> expected, IEqualityComparer<T> comparer, string message = "")
         {
-            Assert.True(actual.SequenceEqual(expected, comparer));
+            Is(actual, expected, comparer.Equals, message);
         }
 
-        /// <summary>Assert.True(actual.SequenceEqual(expected, comparison))</summary>
-        public static void Is<T>(this IEnumerable<T> actual, IEnumerable<T> expected, Func<T, T, bool> equalityComparison)
+        /// <summary>CollectionAssert.AreEqual</summary>
+        public static void Is<T>(this IEnumerable<T> actual, IEnumerable<T> expected, Func<T, T, bool> equalityComparison, string message = "")
         {
-            Assert.True(actual.SequenceEqual(expected, new EqualityComparer<T>(equalityComparison)));
+            CollectionAssert.AreEqual(expected.ToArray(), actual.ToArray(), new ComparisonComparer<T>(equalityComparison), message);
         }
 
-        /// <summary>Assert.NotEqual, if T is IEnumerable then check value equality</summary>
-        public static void IsNot<T>(this T actual, T notExpected)
+        /// <summary>Assert.AreNotEqual, if T is IEnumerable then CollectionAssert.AreNotEqual</summary>
+        public static void IsNot<T>(this T actual, T notExpected, string message = "")
         {
             if (typeof(T) != typeof(string) && typeof(IEnumerable).IsAssignableFrom(typeof(T)))
             {
-                Assert.NotEqual(
-                    ((IEnumerable)actual).Cast<object>().ToArray(),
-                    ((IEnumerable)notExpected).Cast<object>().ToArray());
+                ((IEnumerable)actual).Cast<object>().IsNot(((IEnumerable)notExpected).Cast<object>(), message);
                 return;
             }
 
-            Assert.NotEqual(notExpected, actual);
+            Assert.AreNotEqual(notExpected, actual, message);
         }
 
-        /// <summary>Assert.NotEqual</summary>
-        public static void IsNot<T>(this T actual, T notExpected, IEqualityComparer<T> comparer)
-        {
-            Assert.NotEqual(notExpected, actual, comparer);
-        }
-
-        /// <summary>Assert.NotEqual(sequence value compare)</summary>
+        /// <summary>CollectionAssert.AreNotEqual</summary>
         public static void IsNot<T>(this IEnumerable<T> actual, params T[] notExpected)
         {
             IsNot(actual, notExpected.AsEnumerable());
         }
 
-        /// <summary>Assert.NotEqual(sequence value compare)</summary>
-        public static void IsNot<T>(this IEnumerable<T> actual, IEnumerable<T> notExpected)
+        /// <summary>CollectionAssert.AreNotEqual</summary>
+        public static void IsNot<T>(this IEnumerable<T> actual, IEnumerable<T> notExpected, string message = "")
         {
-            Assert.NotEqual(notExpected.ToArray(), actual.ToArray());
+            CollectionAssert.AreNotEqual(notExpected.ToArray(), actual.ToArray(), message);
         }
 
-        /// <summary>Assert.False(actual.SequenceEqual(notExpected, comparer))</summary>
-        public static void IsNot<T>(this IEnumerable<T> actual, IEnumerable<T> notExpected, IEqualityComparer<T> comparer)
+        /// <summary>CollectionAssert.AreNotEqual</summary>
+        public static void IsNot<T>(this IEnumerable<T> actual, IEnumerable<T> notExpected, IEqualityComparer<T> comparer, string message = "")
         {
-            Assert.False(actual.SequenceEqual(notExpected, comparer));
+            IsNot(actual, notExpected, comparer.Equals, message);
         }
 
-        /// <summary>Assert.False(actual.SequenceEqual(notExpected, comparison))</summary>
-        public static void IsNot<T>(this IEnumerable<T> actual, IEnumerable<T> notExpected, Func<T, T, bool> equalityComparison)
+        /// <summary>CollectionAssert.AreNotEqual</summary>
+        public static void IsNot<T>(this IEnumerable<T> actual, IEnumerable<T> notExpected, Func<T, T, bool> equalityComparison, string message = "")
         {
-            Assert.False(actual.SequenceEqual(notExpected, new EqualityComparer<T>(equalityComparison)));
+            CollectionAssert.AreNotEqual(notExpected.ToArray(), actual.ToArray(), new ComparisonComparer<T>(equalityComparison), message);
         }
 
-        /// <summary>Assert.Null</summary>
-        public static void IsNull<T>(this T value)
+        /// <summary>Assert.IsNull</summary>
+        public static void IsNull<T>(this T value, string message = "")
         {
-            Assert.Null(value);
+            Assert.IsNull(value, message);
         }
 
-        /// <summary>Assert.NotNull</summary>
-        public static void IsNotNull<T>(this T value)
+        /// <summary>Assert.IsNotNull</summary>
+        public static void IsNotNull<T>(this T value, string message = "")
         {
-            Assert.NotNull(value);
+            Assert.IsNotNull(value, message);
         }
 
         /// <summary>Is(true)</summary>
-        public static void IsTrue(this bool value)
+        public static void IsTrue(this bool value, string message = "")
         {
-            value.Is(true);
+            value.Is(true, message);
         }
 
         /// <summary>Is(false)</summary>
-        public static void IsFalse(this bool value)
+        public static void IsFalse(this bool value, string message = "")
         {
-            value.Is(false);
+            value.Is(false, message);
         }
 
-        /// <summary>Assert.Same</summary>
-        public static void IsSameReferenceAs<T>(this T actual, T expected)
+        /// <summary>Assert.AreSame</summary>
+        public static void IsSameReferenceAs<T>(this T actual, T expected, string message = "")
         {
-            Assert.Same(expected, actual);
+            Assert.AreSame(expected, actual, message);
         }
 
-        /// <summary>Assert.NotSame</summary>
-        public static void IsNotSameReferenceAs<T>(this T actual, T notExpected)
+        /// <summary>Assert.AreNotSame</summary>
+        public static void IsNotSameReferenceAs<T>(this T actual, T notExpected, string message = "")
         {
-            Assert.NotSame(notExpected, actual);
+            Assert.AreNotSame(notExpected, actual, message);
         }
 
-        /// <summary>Assert.IsType</summary>
-        public static TExpected IsInstanceOf<TExpected>(this object value)
+        /// <summary>Assert.IsInstanceOf</summary>
+        public static TExpected IsInstanceOf<TExpected>(this object value, string message = "")
         {
-            Assert.IsType<TExpected>(value);
+            Assert.IsInstanceOf<TExpected>(value, message);
             return (TExpected)value;
         }
 
-        /// <summary>Assert.IsNotType</summary>
-        public static void IsNotInstanceOf<TWrong>(this object value)
+        /// <summary>Assert.IsNotInstanceOf</summary>
+        public static void IsNotInstanceOf<TWrong>(this object value, string message = "")
         {
-            Assert.IsNotType<TWrong>(value);
+            Assert.IsNotInstanceOf<TWrong>(value, message);
         }
 
-        /// <summary>EqualityComparison to IEqualityComparer Converter for CollectionAssert</summary>
-        private class EqualityComparer<T> : IEqualityComparer<T>
+        /// <summary>EqualityComparison to IComparer Converter for CollectionAssert</summary>
+        private class ComparisonComparer<T> : IComparer
         {
             readonly Func<T, T, bool> comparison;
 
-            public EqualityComparer(Func<T, T, bool> comparison)
+            public ComparisonComparer(Func<T, T, bool> comparison)
             {
                 this.comparison = comparison;
             }
 
-
-            public bool Equals(T x, T y)
+            public int Compare(object x, object y)
             {
                 return (comparison != null)
-                    ? comparison(x, y)
-                    : object.Equals(x, y);
-            }
-
-            public int GetHashCode(T obj)
-            {
-                return 0;
+                    ? comparison((T)x, (T)y) ? 0 : -1
+                    : object.Equals(x, y) ? 0 : -1;
             }
         }
 
@@ -357,13 +333,13 @@ namespace Xunit
             message = (string.IsNullOrEmpty(message) ? "" : ", " + message);
             if (object.ReferenceEquals(actual, expected)) return;
 
-            if (actual == null) throw new XunitException("actual is null" + message);
-            if (expected == null) throw new XunitException("actual is not null" + message);
+            if (actual == null) throw new AssertionException("actual is null" + message);
+            if (expected == null) throw new AssertionException("actual is not null" + message);
             if (actual.GetType() != expected.GetType())
             {
                 var msg = string.Format("expected type is {0} but actual type is {1}{2}",
                     expected.GetType().Name, actual.GetType().Name, message);
-                throw new XunitException(msg);
+                throw new AssertionException(msg);
             }
 
             var r = StructuralEqual(actual, expected, new[] { actual.GetType().Name }); // root type
@@ -371,7 +347,7 @@ namespace Xunit
             {
                 var msg = string.Format("is not structural equal, failed at {0}, actual = {1} expected = {2}{3}",
                     string.Join(".", r.Names), r.Left, r.Right, message);
-                throw new XunitException(msg);
+                throw new AssertionException(msg);
             }
         }
 
@@ -379,7 +355,7 @@ namespace Xunit
         public static void IsNotStructuralEqual(this object actual, object expected, string message = "")
         {
             message = (string.IsNullOrEmpty(message) ? "" : ", " + message);
-            if (object.ReferenceEquals(actual, expected)) throw new XunitException("actual is same reference" + message); ;
+            if (object.ReferenceEquals(actual, expected)) throw new AssertionException("actual is same reference" + message); ;
 
             if (actual == null) return;
             if (expected == null) return;
@@ -391,7 +367,7 @@ namespace Xunit
             var r = StructuralEqual(actual, expected, new[] { actual.GetType().Name }); // root type
             if (r.IsEquals)
             {
-                throw new XunitException("is structural equal" + message);
+                throw new AssertionException("is structural equal" + message);
             }
         }
 
